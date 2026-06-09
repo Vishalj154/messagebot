@@ -1,30 +1,45 @@
-.welcome{
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.welcome {
   /* mix-blend-mode: multiply; */
   mix-blend-mode: screen;
-  height:200px;
-  width:200px;
+  height: 200px;
+  width: 200px;
 }
-.welcome-container{
+
+.welcome-container {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  width:60%;
-  background-color: linear-gradient(
-    135deg,
-    rgba(172, 184, 187, 0.1) 0%,
-    rgba(110, 153, 173, 0.584) 50%,
-    rgba(83, 74, 184, 0.584) 75%,
-    rgba(129, 20, 212, 0.1) 100%
-  );
-  border:2px solid lightblue;
+  width: 100vw;
+  min-height: 100vh;
+  background: linear-gradient(135deg, rgba(215, 232, 236, 0.1) 0%, rgba(86, 148, 177, 0.584) 50%, rgba(65, 55, 184, 0.584) 75%, rgb(25 3 42 / 10%) 100%);
+  border: 2px solid lightblue;
   margin: 0px;
+  font-family: "Times New Roman", serif;
 }
-.welcometext{
+
+.welcometext {
   margin-left: 20px;
   display: flex;
   flex-direction: column;
-  align-items:center;
-  color: var(--text);
+  align-items: center;
+  color: black;
+}
+
+button {
+  background-color: #4CAF50;
+  border: 1px solid #4CAF50;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
 }
