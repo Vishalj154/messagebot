@@ -17,7 +17,7 @@ const Signup = () => {
         if (phone.length < 10) {
             alert("phone length must be 10 characters")
         }
-        if (password.length < 6) {
+        if (password.length <= 5) {
             alert("password length should be at least 6 characters")
         }
         if (password != confirmPassword) {
@@ -31,7 +31,7 @@ const Signup = () => {
             password
         };
 
-        console.log(userData);
+        alert(`username: ${userData.username}, email: ${userData.email}`);
     };
     return (
 
