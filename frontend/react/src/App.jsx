@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import welcomeImage from './assets/lema_welcome.png'
 import './App.css'
 import Signup from './signup'
@@ -22,6 +22,16 @@ function HomePage() {
         <button onClick={() => navigate('/login')}>Login</button>
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/login" element={<Login />} />
+    </Routes>
   )
 }
 

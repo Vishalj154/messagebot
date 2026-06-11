@@ -1,12 +1,12 @@
-import React from 'react'
-import { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 
-const signup = () => {
-    const [username, setUsername] = useState('')
-    const [email, setEmail] = useState('')
-    const [phone, setPhone] = useState('')
-    const [password, setPassword] = useState('')
-    const [confirmpassword, setconfirmpassword] =useState('')
+const Signup = () => {
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
   return (
     <div className="signup-form">
       <h2>Sign Up here</h2>
