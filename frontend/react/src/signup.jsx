@@ -1,5 +1,8 @@
 import React, { useState } from 'react'
 import './index.css'
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
+import axios from "axios";
 
 const Signup = () => {
     const [username, setUsername] = useState('')
@@ -8,7 +11,7 @@ const Signup = () => {
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!email.includes('@')) {
             alert("Enter a valid email");
@@ -24,14 +27,32 @@ const Signup = () => {
             alert("confirmpassword should be same as password")
         }
 
-        const userData = {
-            username,
-            email,
-            phone,
-            password
-        };
+        try {
+            const userCredential =
+                await createUserWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
 
-        alert(`username: ${userData.username}, email: ${userData.email}`);
+            const uid = userCredential.user.uid;
+
+            // await axios.post(
+            //     "http://localhost:5000/api/users/register",
+            //     {
+            //         uid,
+            //         username,
+            //         email,
+            //         phone
+            //     }
+            // );
+            console.log("Firebase UID:", uid);
+            alert("User Registered Successfully");
+
+        }
+        catch (err) {
+            alert(err.message);
+        }
     };
     return (
 
