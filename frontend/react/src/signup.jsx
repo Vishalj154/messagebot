@@ -18,15 +18,19 @@ const Signup = () => {
             return;
         }
         if (phone.length < 10) {
-            alert("phone length must be 10 characters")
-        }
-        if (password.length <= 5) {
-            alert("password length should be at least 6 characters")
-        }
-        if (password != confirmPassword) {
-            alert("confirmpassword should be same as password")
+            alert("phone length must be 10 characters");
+            return;
         }
 
+        if (password.length <= 5) {
+            alert("password length should be at least 6 characters");
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            alert("confirm password should be same as password");
+            return;
+        }
         try {
             const userCredential =
                 await createUserWithEmailAndPassword(
