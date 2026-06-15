@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import './index.css'
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
-import axios from "axios";
+import { auth } from "./firebase";
 
 const Signup = () => {
     const [username, setUsername] = useState('')
