@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import './index.css'
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "./firebase";
+import axios from "axios";
 
 const Signup = () => {
     const [username, setUsername] = useState('')
@@ -42,15 +43,15 @@ const Signup = () => {
 
             const uid = userCredential.user.uid;
 
-            // await axios.post(
-            //     "http://localhost:5000/api/users/register",
-            //     {
-            //         uid,
-            //         username,
-            //         email,
-            //         phone
-            //     }
-            // );
+            await axios.post(
+                "http://localhost:5000/api/users/register",
+                {
+                    uid,
+                    username,
+                    email,
+                    phone
+                }
+            );
             console.log("Firebase UID:", uid);
             alert("User Registered Successfully");
 
