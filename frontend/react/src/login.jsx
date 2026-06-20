@@ -7,18 +7,19 @@ import './index.css'
 const Login = () => {
     const [Email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
 
-    const handleSubmit = async (e)=>{
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        try{
+        try {
             const userinfo = await signInWithEmailAndPassword(
-            auth,
-            Email,
-            password
-        );
-        console.log(userinfo.user);
-        alert("Login successful");
-        } catch(errr){
+                auth,
+                Email,
+                password
+            );
+            console.log(userinfo.user);
+            alert("Login successful");
+        } catch (errr) {
             alert(errr.message);
         }
     };
@@ -26,10 +27,11 @@ const Login = () => {
   return (
     <div className='signup-form'>
         <h1>Login here</h1>
-        <label >
-            Email: <input type="email" value={Email} onChange={(e)=> setEmail(e.target.value)  } required/>
-        </label>
-        <label>
+        <form onSubmit={handleSubmit}>
+            <label>
+                Email: <input type="email" value={Email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+            <label>
                 Password:
                 <div className="password-field">
                     <input
@@ -48,9 +50,9 @@ const Login = () => {
                     </button>
                 </div>
             </label>
-            <button className="submit" onClick={handleSubmit} type="button">Submit</button>
+            <button className="submit" type="submit">Submit</button>
+        </form>
     </div>
-    
   )
 }
 
