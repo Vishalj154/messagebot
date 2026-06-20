@@ -8,16 +8,20 @@ const Login = () => {
     const [Email, setEmail] = useState('')
     const [password, setPassword] = useState('')
 
-    const handleSubmit = (e)=>{
+    const handleSubmit = async (e)=>{
         e.preventDefault();
-        const userinfo = new signInWithEmailAndPassword(
+        try{
+            const userinfo = await signInWithEmailAndPassword(
             auth,
             Email,
             password
         );
         console.log(userinfo.user);
-        alert("Login successful")
-    }
+        alert("Login successful");
+        } catch(errr){
+            alert(errr.message);
+        }
+    };
     
   return (
     <div className='signup-form'>
