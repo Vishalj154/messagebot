@@ -14,52 +14,70 @@ app.get("/", (req, res) => {
 app.post("/api/users/register", (req, res) => {
 
     const { uid, username, email, phone } = req.body;
-
-    const sql = `
-        INSERT INTO users
-        (firebase_uid, username, email, phone)
-        VALUES (?, ?, ?, ?)
-    `;
-
     db.query(
-        sql,
-        [uid, username, email, phone],
-        (err, result) => {
-
+        "SELECT * FROM users WHERE firebase_uid = ?",
+        [uid],
+        (err, rows) => {
             if (err) {
-                console.log(err);
-
                 return res.status(500).json({
                     success: false,
                     message: err.message
                 });
             }
 
-            res.status(201).json({
-                success: true,
-                message: "User saved to database"
-            });
+            if (rows.length > 0) {
+                return res.status(200).json({
+                    success: true,
+                    message: "User already exists"
+                });
+            }
+
+
+            const sql = `
+        INSERT INTO users
+        (firebase_uid, username, email, phone)
+        VALUES (?, ?, ?, ?)
+    `;
+
+            db.query(
+                sql,
+                [uid, username, email, phone],
+                (err, result) => {
+
+                    if (err) {
+                        console.log(err);
+
+                        return res.status(500).json({
+                            success: false,
+                            message: err.message
+                        });
+                    }
+
+                    res.status(201).json({
+                        success: true,
+                        message: "User saved to database"
+                    });
+                }
+            );
+    });
+
+    const db = mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME
+    });
+
+    db.connect((err) => {
+        if (err) {
+            console.log("Database connection failed");
+            console.log(err);
+            return;
         }
-    );
-});
 
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-});
+        console.log("MySQL Connected");
+    });
 
-db.connect((err) => {
-    if (err) {
-        console.log("Database connection failed");
-        console.log(err);
-        return;
-    }
-
-    console.log("MySQL Connected");
-});
-
-app.listen(5000, () => {
-    console.log("Server running on port 5000");
-});
+    app.listen(5000, () => {
+        console.log("Server running on port 5000");
+    });
