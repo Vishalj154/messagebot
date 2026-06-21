@@ -62,7 +62,27 @@ const Signup = () => {
         }
     };
     // handlegooglelogin
-    const 
+    const handleGoogleLogin = async () => {
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user();
+
+            await axios.post(
+                "http://localhost:5000/api/users/register",
+                {
+                    uid: user.uid,
+                    username: user.displayName,
+                    email: user.email,
+                    phone: user.phoneNumber || ""
+                }
+            );
+            alert("Google login successful");
+        } catch (err) {
+            console.log(err);
+            alert(err.message);
+
+        }
+    };
     return (
 
         <div className="signup-form">
