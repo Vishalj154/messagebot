@@ -3,7 +3,7 @@ import welcomeImage from './assets/lema_welcome.png'
 import './App.css'
 import Signup from './signup'
 import Login from './login'
-import profile from '../components/Profile'
+import Profile from '../components/Profile'
 
 function HomePage() {
   const navigate = useNavigate()
