@@ -2,15 +2,32 @@ import React from 'react'
 import { auth } from '../src/firebase'
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 
 
 const ProfileHeader = () => {
     const user = auth.currentUser;
+    const [userData,setUserData]=useState(null)
     if (!user) {
         return <h2>loading....</h2>
     }
+    const uid = user.uid;
+
+    useEffect(() => {
+        axios.get(`http://localhost:5000/api/users/register/${uid}`)
+            .then((res) => {
+                console.log(res.data);
+            })
+            .catch((err){
+                console.log(err);
+
+            });
+    }, [uid]);
+    setUserData(res.data);
+
     const navigate = useNavigate();
-    const handlelogout = async() => {
+    const handlelogout = async () => {
         await signOut(auth);
         navigate('/login');
     };
@@ -21,7 +38,7 @@ const ProfileHeader = () => {
             <img src={user.photoURL} alt="" />
             <h3>Name : {user.displayName}</h3>
             <p>Email : {user.email} </p>
-            <p>phone : {user.phoneNumber}</p>
+            <p>phone : {userData?.phone}</p>
             <button type='button' onClick={handlelogout}>Logout</button>
         </div>
     )

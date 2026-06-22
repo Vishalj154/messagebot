@@ -61,23 +61,36 @@ app.post("/api/users/register", (req, res) => {
             );
         });
 });
-    const db = mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME
-    });
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+});
+//profileHeader
+app.get('/user/uid', (req, res) => {
+    const uid = req.params.uid;
+    db.query(
+        "SELECT * FROM USERS WHERE uid=?",
+        [uid],
+        (err, result) => {
+            if (err) return err.status(500).json(err);
+            res.json(result[0]);
 
-    db.connect((err) => {
-        if (err) {
-            console.log("Database connection failed");
-            console.log(err);
-            return;
         }
+    );
+});
 
-        console.log("MySQL Connected");
-    });
+db.connect((err) => {
+    if (err) {
+        console.log("Database connection failed");
+        console.log(err);
+        return;
+    }
 
-    app.listen(5000, () => {
-        console.log("Server running on port 5000");
-    });
+    console.log("MySQL Connected");
+});
+
+app.listen(5000, () => {
+    console.log("Server running on port 5000");
+});
