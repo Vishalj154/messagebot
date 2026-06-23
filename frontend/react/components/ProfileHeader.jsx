@@ -9,12 +9,17 @@ import "./ProfileHeader.css";
 
 const ProfileHeader = () => {
     const user = auth.currentUser;
-    const uid = user.uid;
+    const uid = user?.uid;
+
     const [userData, setUserData] = useState(null)
     const [phone, setPhone] = useState("");
 
+    if (!user) {
+        return <h2>loading....</h2>
+    }
 
-    const handleAddPhone = async() => {
+
+    const handleAddPhone = async () => {
         try {
             const res = await axios.put(
                 "http://localhost:5000/api/users/update-phone",
@@ -25,6 +30,12 @@ const ProfileHeader = () => {
             );
 
             console.log(res.data);
+
+            setUserData({
+                ...userData,
+                phone: phone
+            });
+
             alert("Phone updated successfully");
         } catch (err) {
             console.log(err);
@@ -33,10 +44,12 @@ const ProfileHeader = () => {
     };
 
     useEffect(() => {
-        if (!user)
-            console.log(user);
+        if (!user) {
+            return;
+
+        }
         console.log(uid);
-        return;
+
 
         axios.get(`http://localhost:5000/api/users/register/${uid}`)
             .then((res) => {
@@ -48,10 +61,8 @@ const ProfileHeader = () => {
                 console.log(err);
 
             });
-    }, [uid]);
-    if (!user) {
-        return <h2>loading....</h2>
-    }
+    }, [uid, user]);
+
 
 
     const navigate = useNavigate();
