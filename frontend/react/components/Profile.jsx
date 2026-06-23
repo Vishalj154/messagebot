@@ -4,7 +4,6 @@ import ProfileHeader from './ProfileHeader'
 const Profile = () => {
   return (
     <div>
-      My profile
     < ProfileHeader />
 
     </div>

@@ -86,6 +86,8 @@ const Signup = () => {
     return (
 
         <div className="signup-form">
+            <a href="\">back to home </a>
+
             <h2>Sign Up here</h2>
             <label>
                 Username:

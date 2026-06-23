@@ -54,6 +54,7 @@ const Login = () => {
     };
     return (
         <div className='signup-form'>
+            <a href="\">back to home </a>
             <h1>Login here</h1>
             <form onSubmit={handleSubmit}>
                 <label>

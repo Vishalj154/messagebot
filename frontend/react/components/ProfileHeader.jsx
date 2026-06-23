@@ -51,7 +51,7 @@ const ProfileHeader = () => {
         console.log(uid);
 
 
-        axios.get(`http://localhost:5000/api/users/register/${uid}`)
+        axios.get(`http://localhost:5000/api/users/${uid}`)
             .then((res) => {
                 console.log(res.data);
                 setUserData(res.data);
@@ -76,18 +76,23 @@ const ProfileHeader = () => {
             <img src={user.photoURL} alt="" />
             <h3>Name : {user.displayName}</h3>
             <p>Email : {user.email} </p>
-            <p>Phone : {userData?.phone || "Not Added"}</p>
 
-            <input
-                type="text"
-                placeholder="Enter Phone Number"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-            />
+            {userData?.phone ? (
+                <p>Phone : {userData.phone}</p>
+            ) : (
+                <>
+                    <input
+                        type="text"
+                        placeholder="Enter Phone Number"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                    />
 
-            <button onClick={handleAddPhone}>
-                Save Phone
-            </button>
+                    <button onClick={handleAddPhone}>
+                        Save Phone
+                    </button>
+                </>
+            )}
             <button type='button' onClick={handlelogout}>Logout</button>
         </div>
     )
