@@ -81,6 +81,22 @@ app.get('/user/uid', (req, res) => {
     );
 });
 
+//addphone
+app.put('/api/users/update-phone', (req, res) => {
+    const [uid, phone] = res.body;
+    db.query = (
+        "UPDATE users SET phone=? WHERE uid=?",
+        [phone, uid],
+        (err, result) => {
+            if (err) return err.status(500).json(err);
+
+            res.json({
+                message: "Phone updated successfully"
+            });
+        }
+    );
+});
+
 db.connect((err) => {
     if (err) {
         console.log("Database connection failed");
