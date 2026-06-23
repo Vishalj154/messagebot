@@ -14,7 +14,7 @@ const ProfileHeader = () => {
     const [phone, setPhone] = useState("");
 
 
-    const handleAddPhone = () => {
+    const handleAddPhone = async() => {
         try {
             const res = await axios.put(
                 "http://localhost:5000/api/users/update-phone",
