@@ -8,23 +8,30 @@ import { useEffect, useState } from 'react';
 
 const ProfileHeader = () => {
     const user = auth.currentUser;
-    const [userData,setUserData]=useState(null)
-    if (!user) {
-        return <h2>loading....</h2>
-    }
     const uid = user.uid;
+    const [userData, setUserData] = useState(null)
 
     useEffect(() => {
+        if (!user)
+            console.log(user);
+            console.log(uid);
+            return;
+
         axios.get(`http://localhost:5000/api/users/register/${uid}`)
             .then((res) => {
                 console.log(res.data);
+                setUserData(res.data);
+
             })
-            .catch((err){
+            .catch((err) => {
                 console.log(err);
 
             });
     }, [uid]);
-    setUserData(res.data);
+    if (!user) {
+        return <h2>loading....</h2>
+    }
+
 
     const navigate = useNavigate();
     const handlelogout = async () => {
@@ -33,7 +40,6 @@ const ProfileHeader = () => {
     };
     return (
         <div className='profile-header'>
-
             <h1>My Profile</h1>
             <img src={user.photoURL} alt="" />
             <h3>Name : {user.displayName}</h3>

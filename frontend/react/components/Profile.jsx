@@ -3,7 +3,12 @@ import ProfileHeader from './ProfileHeader'
 
 const Profile = () => {
   return (
-    <div>My profile</div>
+    <div>
+      My profile
+    < ProfileHeader />
+
+    </div>
+    
   )
 }
 
