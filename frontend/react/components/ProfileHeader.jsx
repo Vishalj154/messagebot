@@ -1,70 +1,48 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { useEffect, useState } from 'react';
 import { useAuth } from '../src/context/AuthContext';
 import { useToast } from '../src/context/ToastContext';
 import "./ProfileHeader.css";
 
 const ProfileHeader = () => {
-    const { user, logout } = useAuth();
+    const { user, profile, logout, updateProfileData } = useAuth();
     const { showToast } = useToast();
-    const uid = user?.uid;
+    const navigate = useNavigate();
 
-    const [userData, setUserData] = useState(null)
-    const [phone, setPhone] = useState("");
+    const [phoneInput, setPhoneInput] = useState("");
+    const [updating, setUpdating] = useState(false);
 
     const handleAddPhone = async () => {
-        if (!phone || phone.replace(/\D/g, "").length < 10) {
+        const phoneDigits = phoneInput.replace(/\D/g, "");
+        if (phoneDigits.length < 10) {
             showToast("Please enter a valid 10-digit phone number.", "error");
             return;
         }
+
+        setUpdating(true);
         try {
-            const res = await axios.put(
-                "http://localhost:5000/api/users/update-phone",
-                {
-                    uid: user.uid,
-                    phone: phone
-                }
-            );
-
-            console.log(res.data);
-
-            setUserData({
-                ...userData,
-                phone: phone
+            // Update Firestore users/{uid} document directly using updateDoc via AuthContext
+            await updateProfileData({
+                phone: phoneDigits,
+                updatedAt: new Date().toISOString()
             });
 
-            showToast("Phone updated successfully!", "success");
+            showToast("Phone number updated successfully in Firestore!", "success");
         } catch (err) {
-            console.error(err);
-            showToast("Failed to update phone number.", "error");
+            console.error("ProfileHeader: failed to update phone in Firestore", err);
+            showToast("Failed to update phone number in Firestore.", "error");
+        } finally {
+            setUpdating(false);
         }
     };
 
-    useEffect(() => {
-        if (!uid) return;
-
-        console.log("Fetching details for user UID:", uid);
-
-        axios.get(`http://localhost:5000/api/users/${uid}`)
-            .then((res) => {
-                console.log(res.data);
-                setUserData(res.data);
-            })
-            .catch((err) => {
-                console.error("Failed to fetch backend user data:", err);
-            });
-    }, [uid]);
-
-    const navigate = useNavigate();
-    const handlelogout = async () => {
+    const handleLogout = async () => {
         try {
             await logout();
             showToast("Logged out successfully.", "success");
             navigate('/login');
         } catch (err) {
-            console.error(err);
+            console.error("ProfileHeader: logout failed", err);
             showToast("Failed to log out.", "error");
         }
     };
@@ -77,22 +55,25 @@ const ProfileHeader = () => {
         );
     }
 
-    // Fallback if avatar URL is missing
+    const displayName = profile?.displayName || user.displayName || "Chattrix User";
+    const email = profile?.email || user.email || "";
+    const phone = profile?.phone || "";
     const defaultAvatar = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+    const photoURL = profile?.photoURL || user.photoURL || defaultAvatar;
 
     return (
         <div className='profile-header'>
             <h1>My Profile</h1>
             <img 
-                src={user.photoURL || defaultAvatar} 
+                src={photoURL} 
                 alt="Profile Avatar" 
-                style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover' }} 
+                style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #4dc0b5' }} 
             />
-            <h3>Name: {user.displayName || userData?.username || "Chattrix User"}</h3>
-            <p>Email: {user.email}</p>
+            <h3>Name: {displayName}</h3>
+            <p>Email: {email}</p>
 
-            {userData?.phone ? (
-                <p>Phone: {userData.phone}</p>
+            {phone ? (
+                <p>Phone: {phone}</p>
             ) : (
                 <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
                     <input
@@ -100,12 +81,18 @@ const ProfileHeader = () => {
                         placeholder="Enter Phone Number"
                         className="input-field"
                         style={{ maxWidth: '250px', textAlign: 'center' }}
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value)}
+                        disabled={updating}
                     />
 
-                    <button className="btn-primary" style={{ maxWidth: '150px', padding: '8px 16px', fontSize: '0.95em' }} onClick={handleAddPhone}>
-                        Save Phone
+                    <button 
+                        className={`btn-primary ${updating ? 'loading' : ''}`} 
+                        style={{ maxWidth: '150px', padding: '8px 16px', fontSize: '0.95em' }} 
+                        onClick={handleAddPhone}
+                        disabled={updating}
+                    >
+                        {updating ? <div className="spinner"></div> : "Save Phone"}
                     </button>
                 </div>
             )}
@@ -114,7 +101,8 @@ const ProfileHeader = () => {
                 type='button' 
                 className="btn-primary" 
                 style={{ marginTop: '20px', backgroundColor: '#e11d48', maxWidth: '150px' }} 
-                onClick={handlelogout}
+                onClick={handleLogout}
+                disabled={updating}
             >
                 Logout
             </button>
@@ -122,4 +110,4 @@ const ProfileHeader = () => {
     )
 }
 
-export default ProfileHeader
+export default ProfileHeader;
