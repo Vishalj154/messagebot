@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from './context/AuthContext'
+import { useToast } from './context/ToastContext'
+import axios from 'axios'
 import './index.css'
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { signInWithPopup } from 'firebase/auth';
-import { auth, provider } from "./firebase";
-import axios from "axios";
 
 const Signup = () => {
     const [username, setUsername] = useState("")
@@ -13,43 +13,51 @@ const Signup = () => {
     const [confirmPassword, setConfirmPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false)
+
+    const { signup, loginWithGoogle } = useAuth()
+    const { showToast } = useToast()
+    const navigate = useNavigate()
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+        e.preventDefault()
+        setLoading(true)
+
+        // Email validation
         if (!email.includes("@")) {
-            alert("Enter a valid email");
-            setLoading(false);
-            return;
-        }
-        if (phone.length < 10) {
-            alert("phone length must be 10 characters");
-            setLoading(false);
-            return;
+            showToast("Please enter a valid email address.", "error")
+            setLoading(false)
+            return
         }
 
-        if (password.length <= 5) {
-            alert("password length should be at least 6 characters");
-            setLoading(false);
-            return;
+        // Phone validation (exactly 10 digits)
+        const phoneDigits = phone.replace(/\D/g, "")
+        if (phoneDigits.length < 10) {
+            showToast("Phone number must be at least 10 digits.", "error")
+            setLoading(false)
+            return
         }
 
+        // Password length validation
+        if (password.length < 6) {
+            showToast("Password must be at least 6 characters.", "error")
+            setLoading(false)
+            return
+        }
+
+        // Password match validation
         if (password !== confirmPassword) {
-            alert("confirm password should be same as password");
-            setLoading(false);
-            return;
+            showToast("Passwords do not match.", "error")
+            setLoading(false)
+            return
         }
+
         try {
-            const userCredential =
-                await createUserWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
+            // Register in Firebase Auth via useAuth
+            const userCredential = await signup(email, password)
+            const uid = userCredential.user.uid
 
-            const uid = userCredential.user.uid;
-
+            // Save user profile to MySQL database
             await axios.post(
                 "http://localhost:5000/api/users/register",
                 {
@@ -58,48 +66,57 @@ const Signup = () => {
                     email,
                     phone
                 }
-            );
-            console.log("Firebase UID:", uid);
-            alert("User Registered Successfully");
+            )
 
+            console.log("Firebase UID:", uid)
+            showToast("User registered successfully!", "success")
+            navigate("/profile")
+        } catch (err) {
+            console.error(err)
+            let message = err.message
+            if (err.code === "auth/email-already-in-use") {
+                message = "The email address is already in use by another account."
+            } else if (err.code === "auth/invalid-email") {
+                message = "The email address is invalid."
+            } else if (err.code === "auth/weak-password") {
+                message = "The password is too weak."
+            }
+            showToast(message, "error")
+        } finally {
+            setLoading(false)
         }
-        catch (err) {
-            alert(err.message);
-        }
-        finally {
-            setLoading(false);
-        }
-    };
-    // handlegooglelogin
+    }
+
     const handleGoogleLogin = async () => {
-        setLoading(true);
+        setLoading(true)
         try {
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
+            const result = await loginWithGoogle()
+            const user = result.user
 
+            // Register user in database
             await axios.post(
                 "http://localhost:5000/api/users/register",
                 {
                     uid: user.uid,
-                    username: user.displayName,
+                    username: user.displayName || user.email.split('@')[0],
                     email: user.email,
                     phone: user.phoneNumber || ""
                 }
-            );
-            alert("Google login successful");
+            )
+            
+            showToast("Google signup successful!", "success")
+            navigate("/profile")
         } catch (err) {
-            console.log(err);
-            alert(err.message);
+            console.error(err)
+            showToast(err.message || "Failed to sign up with Google.", "error")
+        } finally {
+            setLoading(false)
+        }
+    }
 
-        }
-        finally {
-            setLoading(false);
-        }
-    };
     return (
-
         <div className="auth-card">
-            <a href="\" className="back-to-home">back to home </a>
+            <Link to="/" className="back-to-home">back to home</Link>
             <h2>Sign Up here</h2>
             <form onSubmit={handleSubmit} className="auth-form">
                 <div className="form-group">
@@ -111,6 +128,7 @@ const Signup = () => {
                         onChange={(e) => setUsername(e.target.value)}
                         required
                         placeholder="Enter your username"
+                        disabled={loading}
                     />
                 </div>
                 <div className="form-group">
@@ -123,6 +141,7 @@ const Signup = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         placeholder="Enter your email"
+                        disabled={loading}
                     />
                 </div>
                 <div className="form-group phone-input">
@@ -135,6 +154,7 @@ const Signup = () => {
                         onChange={(e) => setPhone(e.target.value)}
                         required
                         placeholder="Enter your phone number"
+                        disabled={loading}
                     />
                 </div>
                 <div className="form-group password-group">
@@ -148,12 +168,14 @@ const Signup = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             placeholder="Enter your password"
+                            disabled={loading}
                         />
                         <button
                             type="button"
                             className="toggle-password-button"
                             onClick={() => setShowPassword((prev) => !prev)}
                             aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            disabled={loading}
                         >
                             {showPassword ? '🙈' : '👁️'}
                         </button>
@@ -170,18 +192,24 @@ const Signup = () => {
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             required
                             placeholder="Confirm your password"
+                            disabled={loading}
                         />
                         <button
                             type="button"
                             className="toggle-password-button"
                             onClick={() => setShowConfirmPassword((prev) => !prev)}
                             aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                            disabled={loading}
                         >
                             {showConfirmPassword ? '🙈' : '👁️'}
                         </button>
                     </div>
                 </div>
-                <button className={`btn-primary ${loading ? 'loading' : ''}`} onClick={handleSubmit} type="button" disabled={loading}>
+                <button 
+                    className={`btn-primary ${loading ? 'loading' : ''}`} 
+                    type="submit" 
+                    disabled={loading}
+                >
                     {loading ? <div className="spinner"></div> : "Sign Up"}
                 </button>
 
@@ -196,6 +224,12 @@ const Signup = () => {
                     <img src="https://www.google.com/favicon.ico" alt="Google icon" /> Continue with Google
                 </button>
             </form>
+            <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.95em', color: '#555' }}>
+                Already have an account?{' '}
+                <Link to="/login" style={{ color: '#4dc0b5', textDecoration: 'none', fontWeight: '600' }}>
+                    Login
+                </Link>
+            </div>
         </div>
     )
 }
