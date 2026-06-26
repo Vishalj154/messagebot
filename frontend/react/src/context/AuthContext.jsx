@@ -7,7 +7,8 @@ import {
   signOut, 
   sendPasswordResetEmail 
 } from "firebase/auth";
-import { auth, provider } from "../firebase";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { auth, provider, db } from "../firebase";
 
 // 1. Create the Authentication Context
 const AuthContext = createContext(null);
@@ -15,48 +16,157 @@ const AuthContext = createContext(null);
 // 2. AuthProvider Component that wraps the application
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Auth helper methods
-  const signup = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  // Centralized Signup logic (creates auth user + saves profile details in Firestore)
+  const signup = async (email, password, username, phone) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const currentUser = userCredential.user;
+
+    const newProfile = {
+      uid: currentUser.uid,
+      displayName: username,
+      email: email,
+      phone: phone || "",
+      photoURL: currentUser.photoURL || null,
+      createdAt: new Date().toISOString(),
+      isOnline: true,
+      lastSeen: new Date().toISOString()
+    };
+
+    // Save to Firestore users/{uid}
+    await setDoc(doc(db, "users", currentUser.uid), newProfile);
+    setProfile(newProfile);
+    return currentUser;
   };
 
-  const login = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
+  // Centralized Login logic (logs in + updates online presence)
+  const login = async (email, password) => {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const currentUser = userCredential.user;
+
+    const docRef = doc(db, "users", currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    const hasProfile = docSnap.exists();
+
+    if (hasProfile) {
+      const updatedPresence = {
+        isOnline: true,
+        lastSeen: new Date().toISOString()
+      };
+      await updateDoc(docRef, updatedPresence);
+      setProfile({ ...docSnap.data(), ...updatedPresence });
+    } else {
+      setProfile(null);
+    }
+
+    return { user: currentUser, hasProfile };
   };
 
-  const loginWithGoogle = () => {
-    return signInWithPopup(auth, provider);
+  // Centralized Google OAuth Login (creates or merges profile + sets presence)
+  const loginWithGoogle = async () => {
+    const result = await signInWithPopup(auth, provider);
+    const currentUser = result.user;
+
+    const docRef = doc(db, "users", currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    const hasProfile = docSnap.exists();
+
+    if (!hasProfile) {
+      const newProfile = {
+        uid: currentUser.uid,
+        displayName: currentUser.displayName || currentUser.email.split('@')[0],
+        email: currentUser.email,
+        phone: currentUser.phoneNumber || "",
+        photoURL: currentUser.photoURL || null,
+        createdAt: new Date().toISOString(),
+        isOnline: true,
+        lastSeen: new Date().toISOString()
+      };
+      await setDoc(docRef, newProfile);
+      setProfile(newProfile);
+      return { user: currentUser, hasProfile: false };
+    } else {
+      const updatedPresence = {
+        isOnline: true,
+        lastSeen: new Date().toISOString()
+      };
+      // Merge: true is used to preserve existing custom fields in document
+      await setDoc(docRef, updatedPresence, { merge: true });
+      setProfile({ ...docSnap.data(), ...updatedPresence });
+      return { user: currentUser, hasProfile: true };
+    }
   };
 
-  const logout = () => {
-    return signOut(auth);
+  // Centralized Logout logic (updates presence + signs out)
+  const logout = async () => {
+    if (user) {
+      try {
+        const docRef = doc(db, "users", user.uid);
+        await updateDoc(docRef, {
+          isOnline: false,
+          lastSeen: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("AuthContext: Failed to update status on logout:", err);
+      }
+    }
+    await signOut(auth);
+    setProfile(null);
   };
 
+  // Password reset wrapper
   const resetPassword = (email) => {
     return sendPasswordResetEmail(auth, email);
   };
 
+  // Update profile data in Firestore and reflect changes in local cache state
+  const updateProfileData = async (data) => {
+    if (!user) throw new Error("No authenticated user.");
+    const docRef = doc(db, "users", user.uid);
+    await updateDoc(docRef, data);
+    setProfile((prev) => (prev ? { ...prev, ...data } : data));
+  };
+
   useEffect(() => {
-    // Listen for Firebase Auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    // Listen to Firebase Auth state transitions
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      setLoading(false); // Auth loading completed
+      
+      if (currentUser) {
+        try {
+          const docRef = doc(db, "users", currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setProfile(docSnap.data());
+          } else {
+            setProfile(null);
+          }
+        } catch (err) {
+          console.error("AuthContext: Error fetching user profile:", err);
+          setProfile(null);
+        }
+      } else {
+        setProfile(null);
+      }
+      
+      setLoading(false);
     });
 
-    // Unsubscribe from listener on unmount
     return () => unsubscribe();
   }, []);
 
   const value = {
     user,
+    profile,
     loading,
     signup,
     login,
     loginWithGoogle,
     logout,
-    resetPassword
+    resetPassword,
+    updateProfileData
   };
 
   if (loading) {
