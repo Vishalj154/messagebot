@@ -29,10 +29,12 @@ export const AuthProvider = ({ children }) => {
       displayName: username,
       email: email,
       phone: phone || "",
-      photoURL: currentUser.photoURL || null,
+      photoURL: null,
       createdAt: new Date().toISOString(),
-      isOnline: true,
-      lastSeen: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      isOnline: false,
+      lastSeen: new Date().toISOString(),
+      provider: "password"
     };
 
     // Save to Firestore users/{uid}
@@ -53,7 +55,8 @@ export const AuthProvider = ({ children }) => {
     if (hasProfile) {
       const updatedPresence = {
         isOnline: true,
-        lastSeen: new Date().toISOString()
+        lastSeen: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
       await updateDoc(docRef, updatedPresence);
       setProfile({ ...docSnap.data(), ...updatedPresence });
@@ -81,20 +84,28 @@ export const AuthProvider = ({ children }) => {
         phone: currentUser.phoneNumber || "",
         photoURL: currentUser.photoURL || null,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         isOnline: true,
-        lastSeen: new Date().toISOString()
+        lastSeen: new Date().toISOString(),
+        provider: "google"
       };
       await setDoc(docRef, newProfile);
       setProfile(newProfile);
       return { user: currentUser, hasProfile: false };
     } else {
-      const updatedPresence = {
+      const updatedProfile = {
+        uid: currentUser.uid,
+        displayName: currentUser.displayName || currentUser.email.split('@')[0],
+        email: currentUser.email,
+        photoURL: currentUser.photoURL || null,
+        provider: "google",
         isOnline: true,
-        lastSeen: new Date().toISOString()
+        lastSeen: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
       // Merge: true is used to preserve existing custom fields in document
-      await setDoc(docRef, updatedPresence, { merge: true });
-      setProfile({ ...docSnap.data(), ...updatedPresence });
+      await setDoc(docRef, updatedProfile, { merge: true });
+      setProfile({ ...docSnap.data(), ...updatedProfile });
       return { user: currentUser, hasProfile: true };
     }
   };
