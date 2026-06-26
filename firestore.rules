@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Function to check if the user is accessing their own data
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Rules for users collection
+    match /users/{userId} {
+      // Anyone authenticated can read user profiles (needed for search and chat display)
+      allow read: if isAuthenticated();
+      
+      // Users can only create or update their own profile
+      allow create, update: if isOwner(userId);
+      
+      // Nobody can delete users from client-side
+      allow delete: if false;
+    }
+    
+    // Rules for chats collection
+    match /chats/{chatId} {
+      // Anyone authenticated can read the global lounge
+      allow read, write: if isAuthenticated() && chatId == 'global_lounge';
+      
+      // For direct chats, only participants can read/update
+      allow read, update: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      
+      // Anyone authenticated can create a new chat, as long as they are in the participants list
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Read: if it's the global lounge OR user is a participant of the parent chat
+        allow read: if isAuthenticated() && (
+          chatId == 'global_lounge' || 
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+        );
+        
+        // Create: if it's the global lounge OR user is a participant of the parent chat
+        allow create: if isAuthenticated() && (
+          chatId == 'global_lounge' || 
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+        ) && request.resource.data.senderId == request.auth.uid; // Must send as self
+        
+        allow update, delete: if false;
+      }
+    }
+  }
+}

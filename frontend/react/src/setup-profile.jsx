@@ -38,11 +38,13 @@ const SetupProfile = () => {
     }
 
     try {
+      const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName.trim())}&background=random`;
+      
       // Update profile info in Firestore (which updates cache in AuthContext)
       await updateProfileData({
         displayName: displayName.trim(),
         phone: phoneDigits,
-        photoURL: user.photoURL || null,
+        photoURL: user.photoURL || defaultAvatar,
         updatedAt: new Date().toISOString()
       });
 

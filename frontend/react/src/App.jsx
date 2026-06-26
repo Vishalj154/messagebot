@@ -6,7 +6,9 @@ import Login from './login'
 import ForgotPassword from './forgot-password'
 import SetupProfile from './setup-profile'
 import Chats from './chats'
+import SearchPage from './SearchPage'
 import Profile from '../components/Profile'
+import Settings from '../components/Settings'
 import AuthGuard from '../components/AuthGuard'
 
 function HomePage() {
@@ -86,6 +88,22 @@ function App() {
         element={
           <AuthGuard requireAuth={true} isSetupProfile={false}>
             <Profile />
+          </AuthGuard>
+        } 
+      />
+      <Route 
+        path="/search" 
+        element={
+          <AuthGuard requireAuth={true} isSetupProfile={false}>
+            <SearchPage />
+          </AuthGuard>
+        } 
+      />
+      <Route 
+        path="/settings" 
+        element={
+          <AuthGuard requireAuth={true} isSetupProfile={false}>
+            <Settings />
           </AuthGuard>
         } 
       />
