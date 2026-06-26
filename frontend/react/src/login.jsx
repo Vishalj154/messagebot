@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useToast } from './context/ToastContext'
-import axios from 'axios'
 import './index.css'
 
 const Login = () => {
@@ -20,19 +19,25 @@ const Login = () => {
         setLoading(true)
         
         try {
-            const userinfo = await login(email, password)
-            console.log(userinfo.user)
+            // Logs in and returns whether the Firestore profile exists
+            const result = await login(email, password)
             showToast("Login successful!", "success")
-            navigate("/profile")
+            
+            // Post-login workflow redirection
+            if (result.hasProfile) {
+                navigate("/app/chats")
+            } else {
+                navigate("/setup-profile")
+            }
         } catch (err) {
-            console.error(err)
+            console.error("Login: error occurred during submit", err)
             let message = err.message
-            if (err.code === "auth/invalid-credential") {
-                message = "Invalid email or password. Please try again."
+            if (err.code === "auth/invalid-credential" || err.code === "auth/invalid-email" || err.code === "auth/wrong-password") {
+                message = "Invalid email or password. Please check your credentials."
             } else if (err.code === "auth/user-not-found") {
-                message = "No account found with this email."
-            } else if (err.code === "auth/wrong-password") {
-                message = "Incorrect password. Please try again."
+                message = "No user account exists for this email address."
+            } else if (err.code === "auth/too-many-requests") {
+                message = "Too many login attempts. Please try again later."
             }
             showToast(message, "error")
         } finally {
@@ -43,26 +48,19 @@ const Login = () => {
     const handleGoogleLogin = async () => {
         setLoading(true)
         try {
+            // Logs in via Google and creates/merges Firestore profile
             const result = await loginWithGoogle()
-            const user = result.user
-
-            // Register/check user in the backend
-            await axios.post(
-                "http://localhost:5000/api/users/register",
-                {
-                    uid: user.uid,
-                    username: user.displayName || user.email.split('@')[0],
-                    email: user.email,
-                    phone: user.phoneNumber || ""
-                }
-            )
-            
-            console.log(user)
             showToast("Google login successful!", "success")
-            navigate("/profile")
+            
+            // Post-login workflow redirection
+            if (result.hasProfile) {
+                navigate("/app/chats")
+            } else {
+                navigate("/setup-profile")
+            }
         } catch (err) {
-            console.error(err)
-            showToast(err.message || "Failed to login with Google.", "error")
+            console.error("Login: error occurred during Google Auth", err)
+            showToast(err.message || "Failed to log in with Google.", "error")
         } finally {
             setLoading(false)
         }
@@ -73,6 +71,8 @@ const Login = () => {
             <Link to="/" className="back-to-home">back to home</Link>
             <h1>Login here</h1>
             <form onSubmit={handleSubmit} className="auth-form">
+                
+                {/* Email Row */}
                 <div className="form-group">
                     <label htmlFor="email">Email:</label>
                     <input
@@ -86,6 +86,8 @@ const Login = () => {
                         disabled={loading}
                     />
                 </div>
+
+                {/* Password Row */}
                 <div className="form-group">
                     <label htmlFor="password">Password:</label>
                     <div className="password-input-wrapper">
@@ -111,10 +113,14 @@ const Login = () => {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-8px' }}>
-                    <Link to="/forgot-password" style={{ fontSize: '0.9em', color: '#4dc0b5', textDecoration: 'none', fontWeight: '500' }}>
-                        Forgot Password?
-                    </Link>
+                {/* Grid row aligning Forgot Password under the password input field */}
+                <div className="form-group">
+                    <div></div> {/* Dummy spacer for left column */}
+                    <div style={{ textAlign: 'right', marginTop: '-6px' }}>
+                        <Link to="/forgot-password" style={{ fontSize: '0.9em', color: '#4dc0b5', textDecoration: 'none', fontWeight: '600' }}>
+                            Forgot Password?
+                        </Link>
+                    </div>
                 </div>
 
                 <button className={`btn-primary ${loading ? 'loading' : ''}`} type="submit" disabled={loading}>
@@ -132,7 +138,8 @@ const Login = () => {
                     <img src="https://www.google.com/favicon.ico" alt="Google icon" /> Continue with Google
                 </button>
             </form>
-            <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.95em', color: '#555' }}>
+            
+            <div style={{ textAlign: 'center', marginTop: '4px', fontSize: '0.95em', color: '#6b7280' }}>
                 Don't have an account?{' '}
                 <Link to="/signup" style={{ color: '#4dc0b5', textDecoration: 'none', fontWeight: '600' }}>
                     Sign Up

@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useToast } from './context/ToastContext'
-import axios from 'axios'
 import './index.css'
 
 const Signup = () => {
@@ -53,33 +52,21 @@ const Signup = () => {
         }
 
         try {
-            // Register in Firebase Auth via useAuth
-            const userCredential = await signup(email, password)
-            const uid = userCredential.user.uid
-
-            // Save user profile to MySQL database
-            await axios.post(
-                "http://localhost:5000/api/users/register",
-                {
-                    uid,
-                    username,
-                    email,
-                    phone
-                }
-            )
-
-            console.log("Firebase UID:", uid)
-            showToast("User registered successfully!", "success")
-            navigate("/profile")
+            // Register in Firebase Auth and Firestore users/{uid} via useAuth
+            await signup(email, password, username, phoneDigits)
+            showToast("Account registered successfully!", "success")
+            
+            // Redirect to dashboard since profile fields are already populated
+            navigate("/app/chats")
         } catch (err) {
-            console.error(err)
+            console.error("Signup: error occurred during submit", err)
             let message = err.message
             if (err.code === "auth/email-already-in-use") {
-                message = "The email address is already in use by another account."
+                message = "This email address is already registered."
             } else if (err.code === "auth/invalid-email") {
-                message = "The email address is invalid."
+                message = "The email address is badly formatted."
             } else if (err.code === "auth/weak-password") {
-                message = "The password is too weak."
+                message = "Password is too weak. Make it at least 6 characters."
             }
             showToast(message, "error")
         } finally {
@@ -90,24 +77,18 @@ const Signup = () => {
     const handleGoogleLogin = async () => {
         setLoading(true)
         try {
+            // Logs in via Google and creates/merges Firestore profile
             const result = await loginWithGoogle()
-            const user = result.user
-
-            // Register user in database
-            await axios.post(
-                "http://localhost:5000/api/users/register",
-                {
-                    uid: user.uid,
-                    username: user.displayName || user.email.split('@')[0],
-                    email: user.email,
-                    phone: user.phoneNumber || ""
-                }
-            )
-            
             showToast("Google signup successful!", "success")
-            navigate("/profile")
+            
+            // Redirect appropriately based on profile existence
+            if (result.hasProfile) {
+                navigate("/app/chats")
+            } else {
+                navigate("/setup-profile")
+            }
         } catch (err) {
-            console.error(err)
+            console.error("Signup: error occurred during Google Auth", err)
             showToast(err.message || "Failed to sign up with Google.", "error")
         } finally {
             setLoading(false)
@@ -119,6 +100,8 @@ const Signup = () => {
             <Link to="/" className="back-to-home">back to home</Link>
             <h2>Sign Up here</h2>
             <form onSubmit={handleSubmit} className="auth-form">
+                
+                {/* Username Row */}
                 <div className="form-group">
                     <label htmlFor="username">Username:</label>
                     <input
@@ -131,6 +114,8 @@ const Signup = () => {
                         disabled={loading}
                     />
                 </div>
+
+                {/* Email Row */}
                 <div className="form-group">
                     <label htmlFor="email">Email:</label>
                     <input
@@ -144,7 +129,9 @@ const Signup = () => {
                         disabled={loading}
                     />
                 </div>
-                <div className="form-group phone-input">
+
+                {/* Phone Row */}
+                <div className="form-group">
                     <label htmlFor="phone">Phone:</label>
                     <input
                         type="tel"
@@ -157,7 +144,9 @@ const Signup = () => {
                         disabled={loading}
                     />
                 </div>
-                <div className="form-group password-group">
+
+                {/* Password Row */}
+                <div className="form-group">
                     <label htmlFor="password">Password:</label>
                     <div className="password-input-wrapper">
                         <input
@@ -181,8 +170,10 @@ const Signup = () => {
                         </button>
                     </div>
                 </div>
-                <div className="form-group password-group">
-                    <label htmlFor="confirmPassword">Confirm Password:</label>
+
+                {/* Confirm Password Row */}
+                <div className="form-group">
+                    <label htmlFor="confirmPassword">Confirm:</label>
                     <div className="password-input-wrapper">
                         <input
                             type={showConfirmPassword ? 'text' : 'password'}
@@ -205,6 +196,7 @@ const Signup = () => {
                         </button>
                     </div>
                 </div>
+
                 <button 
                     className={`btn-primary ${loading ? 'loading' : ''}`} 
                     type="submit" 
@@ -224,7 +216,8 @@ const Signup = () => {
                     <img src="https://www.google.com/favicon.ico" alt="Google icon" /> Continue with Google
                 </button>
             </form>
-            <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.95em', color: '#555' }}>
+            
+            <div style={{ textAlign: 'center', marginTop: '4px', fontSize: '0.95em', color: '#6b7280' }}>
                 Already have an account?{' '}
                 <Link to="/login" style={{ color: '#4dc0b5', textDecoration: 'none', fontWeight: '600' }}>
                     Login

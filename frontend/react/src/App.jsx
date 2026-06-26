@@ -4,6 +4,8 @@ import './App.css'
 import Signup from './signup'
 import Login from './login'
 import ForgotPassword from './forgot-password'
+import SetupProfile from './setup-profile'
+import Chats from './chats'
 import Profile from '../components/Profile'
 import AuthGuard from '../components/AuthGuard'
 
@@ -34,7 +36,7 @@ function App() {
       {/* Public Landing Page */}
       <Route path="/" element={<HomePage />} />
 
-      {/* Guest-only Auth Routes */}
+      {/* Guest-only Auth Routes (Redirects authenticated users automatically) */}
       <Route 
         path="/signup" 
         element={
@@ -60,11 +62,29 @@ function App() {
         } 
       />
 
-      {/* Protected Routes */}
+      {/* First-time Profile Setup Route (Restricted to logged-in users with incomplete profiles) */}
+      <Route 
+        path="/setup-profile" 
+        element={
+          <AuthGuard requireAuth={true} isSetupProfile={true}>
+            <SetupProfile />
+          </AuthGuard>
+        } 
+      />
+
+      {/* Protected App Routes (Restricted to logged-in users with complete profiles) */}
+      <Route 
+        path="/app/chats" 
+        element={
+          <AuthGuard requireAuth={true} isSetupProfile={false}>
+            <Chats />
+          </AuthGuard>
+        } 
+      />
       <Route 
         path="/profile" 
         element={
-          <AuthGuard requireAuth={true}>
+          <AuthGuard requireAuth={true} isSetupProfile={false}>
             <Profile />
           </AuthGuard>
         } 
@@ -74,4 +94,3 @@ function App() {
 }
 
 export default App
-
