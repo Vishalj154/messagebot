@@ -62,12 +62,19 @@ const ProfileHeader = () => {
     const photoURL = profile?.photoURL || user.photoURL || defaultAvatar;
 
     return (
+
         <div className='profile-header'>
+            <button
+                type="button"
+                className="back-to-home"
+                onClick={() => navigate('/app/chats')}>
+                Back to Chats
+            </button>
             <h1>My Profile</h1>
-            <img 
-                src={photoURL} 
-                alt="Profile Avatar" 
-                style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #4dc0b5' }} 
+            <img
+                src={photoURL}
+                alt="Profile Avatar"
+                style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #4dc0b5' }}
             />
             <h3>Name: {displayName}</h3>
             <p>Email: {email}</p>
@@ -86,9 +93,9 @@ const ProfileHeader = () => {
                         disabled={updating}
                     />
 
-                    <button 
-                        className={`btn-primary ${updating ? 'loading' : ''}`} 
-                        style={{ maxWidth: '150px', padding: '8px 16px', fontSize: '0.95em' }} 
+                    <button
+                        className={`btn-primary ${updating ? 'loading' : ''}`}
+                        style={{ maxWidth: '150px', padding: '8px 16px', fontSize: '0.95em' }}
                         onClick={handleAddPhone}
                         disabled={updating}
                     >
@@ -96,11 +103,11 @@ const ProfileHeader = () => {
                     </button>
                 </div>
             )}
-            
-            <button 
-                type='button' 
-                className="btn-primary" 
-                style={{ marginTop: '20px', backgroundColor: '#e11d48', maxWidth: '150px' }} 
+
+            <button
+                type='button'
+                className="btn-primary"
+                style={{ marginTop: '20px', backgroundColor: '#e11d48', maxWidth: '150px' }}
                 onClick={handleLogout}
                 disabled={updating}
             >
