@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { useToast } from "./context/ToastContext";
+import { uploadToCloudinary } from "./services/cloudinaryService";
 import "./index.css";
 
 const SetupProfile = () => {
@@ -13,12 +14,39 @@ const SetupProfile = () => {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // New state for photo upload
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || "");
       setPhone(user.phoneNumber || "");
+      setPhotoPreview(user.photoURL || "");
     }
   }, [user]);
+
+  // Handle file selection — show local preview immediately
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Please select a valid image file.", "error");
+      return;
+    }
+
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_SIZE) {
+      showToast("Image must be smaller than 5MB.", "error");
+      return;
+    }
+
+    setPhotoFile(file);
+    // Show local preview instantly, before upload finishes
+    setPhotoPreview(URL.createObjectURL(file));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,14 +66,31 @@ const SetupProfile = () => {
     }
 
     try {
-      const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName.trim())}&background=random`;
-      
-      // Update/create profile info in Firestore (which updates cache in AuthContext)
-      // Includes all fields needed for a complete profile document
+      let finalPhotoURL = user.photoURL;
+
+      // If user picked a new photo, upload it to Cloudinary first
+      if (photoFile) {
+        setUploadingPhoto(true);
+        try {
+          finalPhotoURL = await uploadToCloudinary(photoFile);
+        } catch (uploadErr) {
+          showToast(uploadErr.message || "Photo upload failed. Try again.", "error");
+          setLoading(false);
+          setUploadingPhoto(false);
+          return;
+        }
+        setUploadingPhoto(false);
+      }
+
+      // Fall back to generated avatar only if no photo exists at all
+      if (!finalPhotoURL) {
+        finalPhotoURL = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName.trim())}&background=random`;
+      }
+
       await updateProfileData({
         displayName: displayName.trim(),
         phone: phoneDigits,
-        photoURL: user.photoURL || defaultAvatar,
+        photoURL: finalPhotoURL,
         createdAt: profile?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isOnline: true,
@@ -71,6 +116,62 @@ const SetupProfile = () => {
       </p>
 
       <form onSubmit={handleSubmit} className="auth-form">
+        {/* Photo upload section */}
+        <div className="form-group" style={{ textAlign: "center" }}>
+          <label htmlFor="photoUpload" style={{ cursor: "pointer", display: "inline-block" }}>
+            <div
+              style={{
+                width: "90px",
+                height: "90px",
+                borderRadius: "50%",
+                margin: "0 auto 10px",
+                overflow: "hidden",
+                border: "2px solid #4dc0b5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#f3f4f6",
+                position: "relative"
+              }}
+            >
+              {photoPreview ? (
+                <img
+                  src={photoPreview}
+                  alt="Profile preview"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <span style={{ fontSize: "0.8em", color: "#9ca3af" }}>Add Photo</span>
+              )}
+              {uploadingPhoto && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "rgba(0,0,0,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}
+                >
+                  <div className="spinner"></div>
+                </div>
+              )}
+            </div>
+            <span style={{ fontSize: "0.85em", color: "#4dc0b5", fontWeight: 600 }}>
+              {photoPreview ? "Change Photo" : "Upload Photo"}
+            </span>
+          </label>
+          <input
+            type="file"
+            id="photoUpload"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            disabled={loading}
+            style={{ display: "none" }}
+          />
+        </div>
+
         <div className="form-group">
           <label htmlFor="displayName">Display Name:</label>
           <input
